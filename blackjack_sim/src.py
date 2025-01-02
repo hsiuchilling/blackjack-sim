@@ -18,24 +18,31 @@ class Shoe:
     def __init__(self, n_decks: int = 6, idx: int = 0, pen: float = .9):
         self.n_decks = n_decks
         self.shoe_size = n_decks * 52
-        self._init_cards()
+        self.cards = self._init_cards()
         self.idx = idx
         self.pen_idx = int(self.shoe_size * pen)
+        self.backup_cards = self._init_cards()
     
     def _init_cards(self):
-        self.cards = []
+        cards = []
         for _ in range(self.n_decks):
             for _ in range(4):
                 for i in range(13):
                     if i == 0:
-                        self.cards.append(Card(rank=i, value=11))
+                        # Aces are initialized as soft aces
+                        cards.append(Card(rank=i, value=11))
                     elif i >= 9:
-                        self.cards.append(Card(rank=i, value=10))
+                        cards.append(Card(rank=i, value=10))
                     else:
-                        self.cards.append(Card(rank=i, value=i+1))
-        random.shuffle(self.cards)
+                        cards.append(Card(rank=i, value=i+1))
+        random.shuffle(cards)
+        return cards
     
     def deal(self) -> Card:
+        # temporary backstop for midround shoe depletion
+        if self.idx >= len(self.cards):
+            return self.backup_cards.pop()
+        
         card = self.cards[self.idx]
         self.idx += 1
         return card
@@ -98,6 +105,9 @@ class Player:
         return self.strategy.action(hand)
 
     def bet(self) -> int:
+        # Bet for a round. This should not be re-called within a round because
+        # strategy may change based on observed cards and all valid same-round bets
+        # must be sized the same as the original.
         bet_size = self.strategy.bet_size()
         self.balance -= bet_size
         return bet_size
