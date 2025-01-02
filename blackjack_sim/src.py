@@ -216,6 +216,7 @@ def handle_player(player: Player, shoe: Shoe):
                 player.balance -= hand.bet
                 new_hand = Hand(bet=hand.bet)
                 new_hand.hit(hand.cards.pop())
+                player.hands.append(new_hand)
                 hands_to_handle.append(new_hand)
             else:
                 raise RuntimeError(f"Invalid player action: {str(action)}")
