@@ -21,6 +21,9 @@ game = Game(
 )
 game.play()
 
-print(players[0].balance)
-print(players[1].balance)
-print(players[2].balance)
+print("==============")
+print("Final Balances")
+print("==============")
+print(f"Player 1: {players[0].balance}")
+print(f"Player 2: {players[1].balance}")
+print(f"Player 3: {players[2].balance}")
