@@ -1,4 +1,4 @@
-from blackjack_sim.src import (
+from blackjack_sim import (
     DumbassStrategy,
     Dealer,
     Game,
