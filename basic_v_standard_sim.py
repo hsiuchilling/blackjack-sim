@@ -1,3 +1,8 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+
 from blackjack_sim import (
     DumbassStrategy,
     Dealer,
@@ -28,13 +33,16 @@ def iter():
         players=players
     )
     game.play()
-    return players[0].balance, players[1].balance
+    return game.player_balances
 
-nsims = 2000
-outcomes = [iter() for _ in range(nsims)]
+nsims = 100
+outcomes = np.array([iter() for _ in range(nsims)])
 
-player_1_avg = sum([i[0] for i in outcomes]) / nsims
-player_2_avg = sum([i[1] for i in outcomes]) / nsims
-
-print(f"Dumb Player Avg: {player_1_avg}")
-print(f"Standard Player Avg: {player_2_avg}")
+df = pd.DataFrame({
+    'time': np.tile(np.arange(outcomes.shape[2]), outcomes.shape[0]),
+    'series': np.repeat(np.arange(outcomes.shape[0]), outcomes.shape[2]),
+    'value': outcomes[:,1,:].ravel()
+})
+# print(df)
+sns.lineplot(x='time', y='value', hue='series', data=df)
+plt.show()
