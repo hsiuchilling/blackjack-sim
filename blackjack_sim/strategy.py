@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 from blackjack_sim.base import (
+    ACTION_MAPPING,
     Action,
     Hand,
     Shoe
@@ -35,6 +36,7 @@ class StandardStrategy:
         self.dealer = dealer
         self.shoe = shoe
         self.strategy_mapping = self._init_strategy()
+        self.count_values = np.array([-1, 1, 1, 1, 1, 1, 0, 0, 0, -1, -1, -1, -1])
 
     def action(self, hand: Hand) -> Action:
         if self.dealer.hand.cards[0].rank == 0:
@@ -54,7 +56,20 @@ class StandardStrategy:
         return self.strategy_mapping[(hand_name, dealer_card_name)]
 
     def bet_size(self) -> int:
-        return 1
+        true_count_bet_index = int(self.get_true_count())
+        if true_count_bet_index < 1:
+            return 1
+        elif true_count_bet_index >= 6:
+            return 6
+        else:
+            return true_count_bet_index
+    
+    def get_true_count(self) -> int:
+        cards_left_approx = self.shoe.shoe_size - self.shoe.idx + 1 if self.shoe.shoe_size - self.shoe.idx + 1 > 0 else 1
+        return np.dot(self.shoe.card_counts, self.count_values) / cards_left_approx * 52
+
+    # def bet_size(self) -> int:
+    #     return 1
 
     def _init_strategy(self) -> dict:
         # TODO: standardize strategy mapping hand nomenclature
@@ -104,7 +119,13 @@ class I18Strategy:
         return self.standard_strategy[(hand_name, dealer_card_name)]
 
     def bet_size(self) -> int:
-        return 1
+        true_count_bet_index = int(self.get_true_count())
+        if true_count_bet_index < 1:
+            return 1
+        elif true_count_bet_index >= 6:
+            return 6
+        else:
+            return true_count_bet_index
 
     def get_true_count(self) -> int:
         cards_left_approx = self.shoe.shoe_size - self.shoe.idx + 1 if self.shoe.shoe_size - self.shoe.idx + 1 > 0 else 1
@@ -112,30 +133,34 @@ class I18Strategy:
 
     def check_i18(self, hand: Hand) -> Action:
         true_count = self.get_true_count()
-        if hand.value == 20 and hand.is_splittable():
+        if hand.value() == 20 and hand.is_splittable():
             if self.dealer.hand.cards[0].value == 5 and true_count >= 5:
                 return Action.SPLIT
-            if self.dealer.hand.cards[0].value == 6 and true_count >= 4:
+            if self.dealer.hand.cards[0].value == 6 and true_count >= 5:
                 return Action.SPLIT
         dealer_key = self.dealer.hand.cards[0].value if self.dealer.hand.cards[0].rank != 0 else 1
         key = (str(hand.value()), str(dealer_key))
-        if benchmark_idx := self.i18_indices.get(key):
-            if true_count < benchmark_idx:
-                return Action.HIT
-            # if hand.is_splittable():
-            #     return Action.SPLIT
-            # # TODO: is this right?
-            # if len(hand.cards) == 2:
-            #     return Action.DHIT
-            return Action.STAY
+        if benchmark_entry := self.i18_indices.get(key):
+            if true_count < benchmark_entry["index"]:
+                return benchmark_entry["under"]
+            else:
+                return benchmark_entry["over"]
             
     def _init_i18_indices(self) -> dict:
         file = Path(__file__).resolve().parent / "assets" / "i18_strategy.csv"
         strat_df = pd.read_csv(file)
         indices = {}
         for _, row in strat_df.iterrows():
-            indices[(str(row.hand_value), str(row.dealer))] = row["index"]
+            indices[(str(row.hand_value), str(row.dealer))] = {
+                "index": row["index"],
+                "over": ACTION_MAPPING[row["decision_over"]],
+                "under": ACTION_MAPPING[row["decision_under"]]
+            }
         return indices
+    
+    def insurance(self) -> bool:
+        true_count = self.get_true_count()
+        return true_count >= 3
 
     def _init_standard_strategy(self) -> dict:
         # TODO: standardize strategy mapping hand nomenclature

@@ -43,7 +43,13 @@ class Game:
             player.hands[0].hit(self.shoe.deal())
             player.hands[0].hit(self.shoe.deal())
         
-        # TODO: implement insurance
+        if self.dealer.hand.cards[0].rank == 0:
+            for player in self.players:
+                if player.insurance():
+                    if self.dealer.hand.is_blackjack():
+                        player.balance += player.hands[0].bet / 2
+                    else:
+                        player.balance -= player.hands[0].bet / 2
         
         # anyone home?
         if self.dealer.hand.value() == 21:

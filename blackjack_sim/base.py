@@ -12,6 +12,12 @@ class Action(Enum):
     # TODO: implement surrender
     # TODO: implement so that ace splits can only be hit once
 
+ACTION_MAPPING = {
+    "D": Action.DHIT,
+    "S": Action.STAY,
+    "H": Action.HIT
+}
+
 class Card:
     def __init__(self, rank: int, value: int):     
         self.rank: int = rank

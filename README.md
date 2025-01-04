@@ -16,14 +16,11 @@ poetry run python basic_play.py
 ## TODO
 
 **Features**
-* check i18 - currently underperforms standard strat
-* implement insurance
 * implement surrenders
 * F4 surrenders
 * mid-shoe entry
 * mid-shoe benchmarks vs. don't count, true count
 * game state pretty print
-
 
 **Clean up**
 * game termination condition

@@ -26,6 +26,12 @@ class Player:
             bet_size = self.strategy.bet_size()
         self.balance -= bet_size
         return bet_size
+    
+    def insurance(self) -> bool:
+        if hasattr(self.strategy, "insurance"):
+            return self.strategy.insurance()
+        else:
+            return False
 
 class DealerStrategy:
     def action(self, hand) -> Action:

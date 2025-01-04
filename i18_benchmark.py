@@ -1,7 +1,6 @@
-import matplotlib.pyplot as plt
+from collections import Counter
+from copy import deepcopy
 import numpy as np
-import pandas as pd
-import seaborn as sns
 
 from blackjack_sim import (
     DumbassStrategy,
@@ -13,16 +12,11 @@ from blackjack_sim import (
     StandardStrategy
 )
 
-def iter():
+def run_strat(strat_class, shoe):
     dealer = Dealer()
-    shoe = Shoe(n_decks=6, pen=.85)
-    dumbass_strategy = DumbassStrategy(dealer=dealer, shoe=shoe)
-    standard_strategy = StandardStrategy(dealer=dealer, shoe=shoe)
-    i18_strategy = I18Strategy(dealer=dealer, shoe=shoe)
+    strat = strat_class(dealer=dealer, shoe=shoe)
     players = [
-        Player(strategy=dumbass_strategy),
-        Player(strategy=standard_strategy),
-        Player(strategy=i18_strategy),
+        Player(strategy=strat)
     ]
     game = Game(
         dealer=dealer,
@@ -30,7 +24,15 @@ def iter():
         players=players
     )
     game.play()
-    return np.array([p.balance for p in players])
+    return players[0].balance
 
-nsims = 5000
+def iter():
+    shoe = Shoe(n_decks=6, pen=.85)
+    balances = []
+    balances.append(run_strat(DumbassStrategy, deepcopy(shoe)))
+    balances.append(run_strat(StandardStrategy, deepcopy(shoe)))
+    balances.append(run_strat(I18Strategy, deepcopy(shoe)))
+    return np.array(balances)
+
+nsims = 2000
 print(np.array([iter() for _ in range(nsims)]).mean(axis = 0))
