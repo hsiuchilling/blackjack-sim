@@ -1,5 +1,8 @@
+from collections import Counter
 from enum import Enum
 import random
+
+import numpy as np
 
 class Action(Enum):
     SPLIT="split"
@@ -42,8 +45,9 @@ class Shoe:
         self.idx = idx
         self.pen_idx = int(self.shoe_size * pen)
         self.backup_cards = self._init_cards()
+        self.card_counts: np.array = self._init_card_counts()
     
-    def _init_cards(self):
+    def _init_cards(self) -> list[Card]:
         cards = []
         for _ in range(self.n_decks):
             for _ in range(4):
@@ -57,6 +61,13 @@ class Shoe:
                         cards.append(Card(rank=i, value=i+1))
         random.shuffle(cards)
         return cards
+
+    def _init_card_counts(self) -> np.array:
+        card_counts = np.zeros(13)
+        if self.idx > 0:
+            for rank, deals in Counter(self.cards[:self.idx]).items():
+                card_counts[rank] += deals
+        return card_counts
     
     def deal(self) -> Card:
         # temporary backstop for midround shoe depletion
@@ -64,6 +75,7 @@ class Shoe:
             return self.backup_cards.pop()
         
         card = self.cards[self.idx]
+        self.card_counts[card.rank] += 1
         self.idx += 1
         return card
 
@@ -98,7 +110,7 @@ class Hand:
                 c.value = 11
                 self._soft_aces.append(c)
     
-    def name(self) -> int:
+    def name(self) -> str:
         if self.is_splittable():
             return f"{self.cards[0].name},{self.cards[0].name}"
         

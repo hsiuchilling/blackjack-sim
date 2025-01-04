@@ -21,16 +21,14 @@ class Player:
         return self.strategy.action(hand)
 
     def bet(self, bet_size=None) -> int:
-        # Bet for a round. This should not be re-called within a round because
-        # strategy may change based on observed cards and all valid same-round bets
-        # must be sized the same as the original.
+        # Bet for a round.
         if bet_size is None:
             bet_size = self.strategy.bet_size()
         self.balance -= bet_size
         return bet_size
 
 class DealerStrategy:
-    def action(self, hand):
+    def action(self, hand) -> Action:
         if hand.value() >= 17 and not (len(hand.cards) == 2 and hand._soft_aces):
             return Action.STAY
         else:
