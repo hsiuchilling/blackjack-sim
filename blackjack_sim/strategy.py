@@ -56,13 +56,16 @@ class StandardStrategy:
         return self.strategy_mapping[(hand_name, dealer_card_name)]
 
     def bet_size(self) -> int:
-        true_count_bet_index = int(self.get_true_count())
-        if true_count_bet_index < 1:
-            return 1
-        elif true_count_bet_index >= 6:
-            return 6
+        if self.shoe.is_active():
+            true_count_bet_index = int(self.get_true_count())
+            if true_count_bet_index < 1:
+                return 1
+            elif true_count_bet_index >= 6:
+                return 6
+            else:
+                return true_count_bet_index
         else:
-            return true_count_bet_index
+            return 1
     
     def get_true_count(self) -> int:
         cards_left_approx = self.shoe.shoe_size - self.shoe.idx + 1 if self.shoe.shoe_size - self.shoe.idx + 1 > 0 else 1
@@ -99,7 +102,7 @@ class I18Strategy:
         self.i18_indices = self._init_i18_indices()
 
     def action(self, hand: Hand) -> Action:
-        if action := self.check_i18(hand):
+        if self.shoe.is_active() and (action := self.check_i18(hand)):
             return action
         
         if self.dealer.hand.cards[0].rank == 0:
@@ -119,13 +122,16 @@ class I18Strategy:
         return self.standard_strategy[(hand_name, dealer_card_name)]
 
     def bet_size(self) -> int:
-        true_count_bet_index = int(self.get_true_count())
-        if true_count_bet_index < 1:
-            return 1
-        elif true_count_bet_index >= 6:
-            return 6
+        if self.shoe.is_active():
+            true_count_bet_index = int(self.get_true_count())
+            if true_count_bet_index < 1:
+                return 1
+            elif true_count_bet_index >= 6:
+                return 6
+            else:
+                return true_count_bet_index
         else:
-            return true_count_bet_index
+            return 1
 
     def get_true_count(self) -> int:
         cards_left_approx = self.shoe.shoe_size - self.shoe.idx + 1 if self.shoe.shoe_size - self.shoe.idx + 1 > 0 else 1
@@ -180,4 +186,61 @@ class I18Strategy:
                     strategy_mapping[(row.Hand, dcn)] = Action.SPLIT
         return strategy_mapping
 
+class ManualStrategy(I18Strategy):
+    def __init__(self, dealer, shoe):
+        # Strategies are given access to both dealer and shoe
+        # Strategies should access only the first card of the dealer's hand
+        # Strategies should access only cards in shoe.cards[0:shoe.idx]
+        super().__init__(dealer, shoe)
         
+        self.dealer = dealer
+        self.shoe = shoe
+        self.i18_strat = super().action
+
+    def action(self, hand: Hand) -> Action:
+        if hand.value == 21:
+            return Action.STAY
+        
+        print("(h)it/(s)tay/(sp)lit/(d)ouble: ", end='')
+        action = None
+        while True:
+            x = input()
+            if x == "sp" and hand.is_splittable():
+                action = Action.SPLIT
+            elif x == "d" and len(hand.cards) == 2:
+                action = Action.DHIT
+            elif x == "h":
+                action = Action.HIT
+            elif x == "s":
+                action = Action.STAY
+            else:
+                print("Invalid input.\nHit: h\nStay: s\nDouble: d\nSplit: sp")
+            
+            if action is not None:
+                i18_action = self.i18_strat(hand)
+                if i18_action != action:
+                    print(f"Book said {i18_action.value}")
+                return action
+
+    
+    def insurance(self) -> bool:
+        while True:
+            print("Insurance? (y/n): ", end="")
+            x = input()
+            if x == "y":
+                return True
+            elif x == "n":
+                return False
+
+    def bet_size(self) -> int:
+        while True:
+            try:
+                print("Bet: ", end='')
+                x = input()
+                bet = float(x)
+                if bet >= 100:
+                    print("What a degen 👀...")
+                return bet
+            except Exception as e:
+                print("Numeric bet please...")
+            

@@ -71,8 +71,8 @@ class Shoe:
     def _init_card_counts(self) -> np.array:
         card_counts = np.zeros(13)
         if self.idx > 0:
-            for rank, deals in Counter(self.cards[:self.idx]).items():
-                card_counts[rank] += deals
+            for c, deals in Counter(self.cards[:self.idx]).items():
+                card_counts[c.rank] += deals
         return card_counts
     
     def deal(self) -> Card:
@@ -94,6 +94,9 @@ class Hand:
         self._soft_aces: list[Card] = []
         self.bet: float = bet
     
+    def format(self):
+        return ", ".join([str(c) for c in self.cards])
+
     def value(self) -> int:
         candidate_value = sum([c.value for c in self.cards])
         if candidate_value <= 21:

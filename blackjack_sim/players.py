@@ -35,7 +35,7 @@ class Player:
 
 class DealerStrategy:
     def action(self, hand) -> Action:
-        if hand.value() >= 17 and not (len(hand.cards) == 2 and hand._soft_aces):
+        if hand.value() >= 17 and not (len(hand.cards) == 2 and hand._soft_aces and hand.value() == 17):
             return Action.STAY
         else:
             return Action.HIT

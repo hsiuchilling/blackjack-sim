@@ -16,6 +16,7 @@ poetry run python basic_play.py
 ## TODO
 
 **Features**
+* prohibit illegal dhits
 * implement surrenders
 * F4 surrenders
 * mid-shoe entry

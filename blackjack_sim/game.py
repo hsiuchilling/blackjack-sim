@@ -1,3 +1,5 @@
+from time import sleep
+
 import numpy as np
 
 from blackjack_sim.base import (
@@ -12,12 +14,13 @@ from blackjack_sim.players import (
 from blackjack_sim.utils import estimate_rounds
 
 class Game:
-    def __init__(self, dealer: Dealer, shoe: Shoe, players: list[Player]):
+    def __init__(self, dealer: Dealer, shoe: Shoe, players: list[Player], interactive: bool=False):
         self.dealer: Dealer = dealer
         self.players: list[Player] = players
         self.n_players: int = len(players)
         self.shoe: Shoe = shoe
         self.round: int = 0
+        self.interactive: bool = interactive
         
         # 2.7 is average number of cards per blackjack hand
         round_estimate: int = estimate_rounds(shoe=shoe, n_players=self.n_players)
@@ -28,6 +31,10 @@ class Game:
         # TODO: confirm simulation end condition
         while self.shoe.is_active():
             self.player_balances[:,self.round] = [p.balance for p in self.players]
+            if self.interactive:
+                print("====================")
+                print(f"Round: {self.round} | PNL: {self.players[0].balance}")
+                print("====================")
             self.play_round()
             self.round += 1
         self.player_balances[:,self.round] = [p.balance for p in self.players]
@@ -43,44 +50,78 @@ class Game:
             player.hands[0].hit(self.shoe.deal())
             player.hands[0].hit(self.shoe.deal())
         
+        if self.interactive:
+            print(f"Dealer: {str(self.dealer.hand.cards[0])}")
+
         if self.dealer.hand.cards[0].rank == 0:
             for player in self.players:
+                if self.interactive:
+                    print(self.players[0].hands[0])
                 if player.insurance():
                     if self.dealer.hand.is_blackjack():
                         player.balance += player.hands[0].bet / 2
                     else:
                         player.balance -= player.hands[0].bet / 2
-        
+
         # anyone home?
         if self.dealer.hand.value() == 21:
+            if self.interactive:
+                print("Sorry! Someone's home")
+                print(f"Dealer: {self.dealer.hand.format()}")
+                print(f"Hand: {self.players[0].hands[0].format()}")
+            
             for player in self.players:
                 if player.hands[0].value() == 21:
                     player.balance += player.hands[0].bet
             return
         
         # update player hands
-        for player in self.players:
-            handle_player(player, self.shoe)
+        for idx, player in enumerate(self.players):
+            handle_player(player, self.shoe, interactive=self.interactive and idx == 0)
         
         # resolve game
         handle_dealer(self.dealer, self.shoe)
+        if self.interactive:
+            print(f"Dealer: {', '.join([str(c) for c in self.dealer.hand.cards])}")
+        
+        first_player_results = []
         if self.dealer.hand.value() == -1:
-            for player in self.players:
+            for idx, player in enumerate(self.players):
                 for hand in player.hands:
                     if hand.is_blackjack():
                         player.balance += 2.5 * hand.bet
+                        if idx == 0:
+                            first_player_results.append("Win!")
                     elif hand.value() != -1:
                         player.balance += 2 * hand.bet
+                        if idx == 0:
+                            first_player_results.append("Win!")
+                    else:
+                        if idx == 0:
+                            first_player_results.append("Loss")
         else:
-            for player in self.players:
+            for idx, player in enumerate(self.players):
                 for hand in player.hands:
                     if hand.value() > self.dealer.hand.value():
                         if hand.is_blackjack():
                             player.balance += 2.5 * hand.bet
+                            if idx == 0:
+                                first_player_results.append("Win")
                         else:
                             player.balance += 2 * hand.bet
+                            if idx == 0:
+                                first_player_results.append("Win")
                     elif hand.value() == self.dealer.hand.value():
                         player.balance += hand.bet
+                        if idx == 0:
+                            first_player_results.append("Push")
+                    else:
+                        if idx == 0:
+                            first_player_results.append("Loss")
+        
+        if self.interactive:
+            print(first_player_results)
+            sleep(1)
 
 def handle_dealer(dealer: Dealer, shoe: Shoe):
     while dealer.hand.value() != -1:
@@ -92,11 +133,13 @@ def handle_dealer(dealer: Dealer, shoe: Shoe):
         else:
             raise RuntimeError(f"Invalid dealer action: {str(action)}")
 
-def handle_player(player: Player, shoe: Shoe):
+def handle_player(player: Player, shoe: Shoe, interactive=False):
     hands_to_handle = [player.hands[0]]
     while hands_to_handle:
         hand = hands_to_handle.pop()
-        while hand.value() != -1:
+        while hand.value() not in (-1, 21):
+            if interactive:
+                print(f"Hand: {hand.format()}")
             action = player.action(hand)
             if action == Action.HIT:
                 hand.hit(shoe.deal())
@@ -106,6 +149,8 @@ def handle_player(player: Player, shoe: Shoe):
                 player.balance -= hand.bet
                 hand.bet *= 2
                 hand.hit(shoe.deal())
+                if interactive:
+                    print(f"Hand: {hand.format()}")
                 break
             elif action == Action.SPLIT:
                 player.balance -= hand.bet
@@ -119,3 +164,11 @@ def handle_player(player: Player, shoe: Shoe):
                 hands_to_handle.append(new_hand)
             else:
                 raise RuntimeError(f"Invalid player action: {str(action)}")
+        
+        if interactive and hand.value() == -1:
+            print(f"Hand: {hand.format()}")
+            print("Bust!")
+        if interactive and hand.value() == 21:
+            print(f"Hand: {hand.format()}")
+            print("Blackjack!")
+        
