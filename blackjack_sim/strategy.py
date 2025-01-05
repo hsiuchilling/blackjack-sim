@@ -67,10 +67,12 @@ class StandardStrategy:
         else:
             return 1
     
-    def get_true_count(self) -> int:
+    def get_true_count(self) -> float:
         cards_left_approx = self.shoe.shoe_size - self.shoe.idx + 1 if self.shoe.shoe_size - self.shoe.idx + 1 > 0 else 1
-        return np.dot(self.shoe.card_counts, self.count_values) / cards_left_approx * 52
+        return self.get_count() / cards_left_approx * 52
 
+    def get_count(self) -> int:
+        return np.dot(self.shoe.card_counts, self.count_values)
     # def bet_size(self) -> int:
     #     return 1
 
@@ -135,7 +137,10 @@ class I18Strategy:
 
     def get_true_count(self) -> int:
         cards_left_approx = self.shoe.shoe_size - self.shoe.idx + 1 if self.shoe.shoe_size - self.shoe.idx + 1 > 0 else 1
-        return np.dot(self.shoe.card_counts, self.count_values) / cards_left_approx * 52
+        return self.get_count() / cards_left_approx * 52
+    
+    def get_count(self) -> int:
+        return np.dot(self.shoe.card_counts, self.count_values)
 
     def check_i18(self, hand: Hand) -> Action:
         true_count = self.get_true_count()
@@ -201,9 +206,9 @@ class ManualStrategy(I18Strategy):
         if hand.value == 21:
             return Action.STAY
         
-        print("(h)it/(s)tay/(sp)lit/(d)ouble: ", end='')
         action = None
         while True:
+            print("(h)it/(s)tay/(sp)lit/(d)ouble/(con)text: ", end='')
             x = input()
             if x == "sp" and hand.is_splittable():
                 action = Action.SPLIT
@@ -213,8 +218,11 @@ class ManualStrategy(I18Strategy):
                 action = Action.HIT
             elif x == "s":
                 action = Action.STAY
+            elif x == "con":
+                print(f"Count: {self.get_count()}")
+                print(f"True Count: {self.get_true_count()}")
             else:
-                print("Invalid input.\nHit: h\nStay: s\nDouble: d\nSplit: sp")
+                print("Invalid input.\nHit: h\nStay: s\nDouble: d\nSplit: sp\nContext: con")
             
             if action is not None:
                 i18_action = self.i18_strat(hand)
