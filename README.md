@@ -16,8 +16,6 @@ poetry run python basic_play.py
 ## TODO
 
 **Features**
-* dealer second card currently being leaked to counts (need an idea of cards revealed)
-* prohibit illegal dhits
 * implement surrenders
 * F4 surrenders
 * mid-shoe entry

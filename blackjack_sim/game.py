@@ -43,7 +43,7 @@ class Game:
         # initial deal
         self.dealer.hand = Hand()
         self.dealer.hand.hit(self.shoe.deal())
-        self.dealer.hand.hit(self.shoe.deal())
+        self.dealer.hand.hit(self.shoe.deal(reserve_count=True))
         
         for player in self.players:
             player.hands = [Hand(bet=player.bet())]
@@ -73,6 +73,7 @@ class Game:
             for player in self.players:
                 if player.hands[0].value() == 21:
                     player.balance += player.hands[0].bet
+            self.shoe.reveal_reserved_card()
             return
         
         # update player hands
@@ -124,6 +125,7 @@ class Game:
             sleep(1)
 
 def handle_dealer(dealer: Dealer, shoe: Shoe):
+    shoe.reveal_reserved_card()
     while dealer.hand.value() != -1:
         action = dealer.action()
         if action == Action.HIT:
@@ -166,8 +168,8 @@ def handle_player(player: Player, shoe: Shoe, interactive=False):
                 raise RuntimeError(f"Invalid player action: {str(action)}")
         
         if interactive and hand.value() == -1:
-            print(f"Hand: {hand.format()}")
             print("Bust!")
+            print(f"Hand: {hand.format()}")
         if interactive and hand.value() == 21:
             print(f"Hand: {hand.format()}")
             print("Blackjack!")

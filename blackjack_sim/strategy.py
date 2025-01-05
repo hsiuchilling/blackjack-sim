@@ -53,7 +53,13 @@ class StandardStrategy:
                 hand_name = str(hand.value())
         else:
             hand_name = hand.name()
-        return self.strategy_mapping[(hand_name, dealer_card_name)]
+        
+        action = self.strategy_mapping[(hand_name, dealer_card_name)]
+        
+        if action == Action.DHIT and len(hand.cards) != 2:
+            action = Action.HIT
+
+        return action
 
     def bet_size(self) -> int:
         if self.shoe.is_active():
@@ -121,7 +127,10 @@ class I18Strategy:
                 hand_name = str(hand.value())
         else:
             hand_name = hand.name()
-        return self.standard_strategy[(hand_name, dealer_card_name)]
+        action = self.standard_strategy[(hand_name, dealer_card_name)]
+        if action == Action.DHIT and len(hand.cards) != 2:
+            action = Action.HIT
+        return action
 
     def bet_size(self) -> int:
         if self.shoe.is_active():
@@ -153,9 +162,13 @@ class I18Strategy:
         key = (str(hand.value()), str(dealer_key))
         if benchmark_entry := self.i18_indices.get(key):
             if true_count < benchmark_entry["index"]:
-                return benchmark_entry["under"]
+                action = benchmark_entry["under"]
             else:
-                return benchmark_entry["over"]
+                action = benchmark_entry["over"]
+        
+            if action == Action.DHIT and len(hand.cards) != 2:
+                action = Action.HIT
+            return action
             
     def _init_i18_indices(self) -> dict:
         file = Path(__file__).resolve().parent / "assets" / "i18_strategy.csv"

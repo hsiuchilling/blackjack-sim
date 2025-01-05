@@ -52,6 +52,7 @@ class Shoe:
         self.pen_idx = int(self.shoe_size * pen)
         self.backup_cards = self._init_cards()
         self.card_counts: np.array = self._init_card_counts()
+        self.reserved_count_card = None
     
     def _init_cards(self) -> list[Card]:
         cards = []
@@ -75,15 +76,25 @@ class Shoe:
                 card_counts[c.rank] += deals
         return card_counts
     
-    def deal(self) -> Card:
+    def deal(self, reserve_count=False) -> Card:
         # temporary backstop for midround shoe depletion
         if self.idx >= len(self.cards):
             return self.backup_cards.pop()
         
         card = self.cards[self.idx]
-        self.card_counts[card.rank] += 1
+        if reserve_count:
+            if self.reserved_count_card is not None:
+                raise RuntimeError("Only one card should be reserved at a given time.")
+            else:
+                self.reserved_count_card = card
+        else:
+            self.card_counts[card.rank] += 1
         self.idx += 1
         return card
+    
+    def reveal_reserved_card(self):
+        self.card_counts[self.reserved_count_card.rank] += 1
+        self.reserved_count_card = None
 
     def is_active(self) -> bool:
         return self.idx < self.pen_idx
